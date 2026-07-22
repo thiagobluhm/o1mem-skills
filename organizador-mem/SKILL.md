@@ -75,6 +75,15 @@ Registre o veredito de cada candidato numa tabela mental/rascunho: `[seção] �
 - ❌ **Resumir ao extrair** — a extração é verbatim. Resumir é uma segunda operação (compressão), e se for feita, tem que ser explícita e aprovada — não misturar com o ato de mover o conteúdo.
 - ❌ **Esquecer os consumidores externos** — outras skills/docs do projeto podem já citar "CLAUDE.md §X"; sua reorganização quebra essas referências se você não as atualizar também.
 
+## Compressão de índice-ponteiro (quando a operação é comprimir, não mover)
+
+Comprimir um índice (ex.: `MEMORY.md`, um sumário, uma tabela de mapa) é operação DISTINTA de mover — e tem um invariante próprio. Ao densificar:
+
+- **Densifique a PROSA, nunca o PAYLOAD buscável.** Troque explicação gramatical por sintaxe `Gatilho → Ação`, abrevie datas/rótulos, use flags de status (`❌ morto`, `🚀 publicado`, `✅ fechado`, `⚠️ risco`) para o LLM escanear estado sem ler a frase inteira, e converta regras em imperativos curtos (`NUNCA…`, `SEMPRE…`). Mas o **estado semântico** (o que está pendente, o número, o ID, a data) é o que a IA busca — cortar isso é perda, não compressão.
+- **NUNCA drope um link que carrega estrutura.** Se o índice é um ponteiro (cada linha aponta um arquivo que outro processo consulta — ex.: um protocolo de save que verifica "já existe arquivo cobrindo isto?" pelo link), remover o `[texto](arquivo.md)` órfã o arquivo do índice e quebra o invariante. **O link é a URL entre parênteses, não o rótulo:** se o rótulo apenas repete o nome do arquivo (`[x.md](x.md)`), ele é redundante — encurte o rótulo (`[↗](x.md)`) e o link sobrevive intacto. Economize no rótulo, nunca na URL.
+- **Preserve 100% dos IDs/labels, datas e estados.** A meta é menos tokens de formatação, não menos fatos.
+- **Meça antes/depois** (bytes + contagem de links + IDs) e reporte a taxa real. Se a compressão só rende cortando conteúdo buscável, **pare e diga isso** — comprimir mais não vale o buraco de memória.
+
 ## Resultado esperado (formato de entrega ao usuário)
 
 ```

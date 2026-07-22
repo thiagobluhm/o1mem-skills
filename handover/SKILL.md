@@ -79,11 +79,17 @@ Pontos de entrada para achar rápido. NÃO é o diff.
 
 ## Passo 2 — Breadcrumb na memória (o índice)
 
-1. **Atualize a linha `RETOMADA`** no topo do `MEMORY.md`: estado atual + próximo passo + `[[link-da-memoria]]`. Ao promover a atual para o histórico entre parênteses, **DROPE a mais antiga — mantenha no máximo 2 linhas `(Anterior ...)`**. O histórico completo já vive nos `project_*` listados abaixo (cada linha "Anterior" termina em `Ver [project_*]`, que persiste); a linha `RETOMADA` guarda só o pulo atual + os 2 imediatamente anteriores como ponte, nunca a cadeia inteira. Deixar acumular re-cria o monólito que a memória existe para evitar.
+1. **Atualize a linha `RETOMADA`** no topo do `MEMORY.md`: estado atual + próximo passo + `[[link-da-memoria]]`. Cada linha (a atual e as `(Anterior ...)`) **carrega a data** no rótulo (`YYYY-MM-DDx`) — é o que o decay lê. Ao promover a atual para o histórico entre parênteses, aplique os **dois critérios de saída, que compõem (sai quem violar QUALQUER um):**
+   - **CAP** — mantenha no máximo **2** linhas `(Anterior ...)`; dropa a mais antiga além disso. Limita o pior caso (vários handovers no mesmo dia).
+   - **IDADE (decay)** — dropa qualquer `(Anterior ...)` com **mais de 30 dias**, mesmo que caiba no cap. Filtra relevância: projeto que dormiu não deve arrastar breadcrumb velho como se fosse fresco.
+
+   O cap é teto O(1); a idade é filtro de relevância — **um complementa o outro**, não substitui. O histórico completo já vive nos `project_*` listados abaixo (cada linha "Anterior" termina em `Ver [project_*]`, que persiste); a linha `RETOMADA` guarda só o pulo atual + os 2 imediatos como ponte, nunca a cadeia inteira. Deixar acumular re-cria o monólito que a memória existe para evitar. **(30 dias é o MESMO limiar reusado no Passo 4 — não invente um segundo número.)**
 2. **Crie/atualize 1 arquivo `project_*`** em `memory/` com o fato durável (decisão + estado + próximo label livre), apontando para o handover e linkando `[[nome]]`.
 3. Ajuste a linha-índice no `MEMORY.md`.
 
 O breadcrumb é TERSO — aponta, não repete. O modo NÃO precisa ir no breadcrumb: ele está na primeira linha do handover.
+
+> **Invariante ao editar/comprimir o `MEMORY.md` (índice-ponteiro):** densifique a prosa (sintaxe `Gatilho → Ação`, flags `❌🚀✅⚠️`, imperativos curtos), mas **nunca drope um link nem um estado buscável**. Cada `[texto](arquivo.md)` é load-bearing — o protocolo de save consulta o índice por esses links para achar o arquivo que cobre um fato; órfã-lo quebra a memória. Para economizar, encurte o TEXTO do link (`[↗](arquivo.md)`), não o remova. Preserve 100% dos IDs/labels, datas e pendências. (Regra completa de compressão de índice: skill `organizador-mem` → "Compressão de índice-ponteiro".)
 
 ## Passo 3 — Libere o /clear
 
@@ -107,6 +113,7 @@ Os dois comandos aparecem **sempre**, mesmo que a conversa já tenha falado dele
 Quando voltar (usuário pede "retomar", "voltar para o handover"):
 
 1. Leia a linha `RETOMADA` do `MEMORY.md` e abra o `documentacao/HANDOVER_*.md` indicado (ou o mais recente).
+   - **Checagem de dormência (decay, mesmo limiar de 30 dias do Passo 2):** se a data da linha `RETOMADA` tiver **mais de 30 dias**, sinalize que o breadcrumb pode estar dormente — reconfira o estado antes de tratá-lo como "atual" (vale para os dois modos; o `git log`/mtime dos arquivos citados diz se algo mudou desde então).
 2. Leia o handover inteiro e **cheque a linha `retomada:`** na primeira linha.
 3. **REGRA DE PROMOÇÃO (vale sempre, antes de seguir o modo escrito):** se o próximo passo — como está escrito OU como evoluiu desde a escrita — envolve agir sobre runtime, trate como `verificada` **mesmo que o arquivo diga `rapida`**. Promoção é sempre permitida; rebaixamento nunca (se o arquivo diz `verificada`, a retomada verifica, ponto).
 
