@@ -5,7 +5,7 @@
 
 ---
 
-![status](https://img.shields.io/badge/status-battle--tested-green)
+![status](https://img.shields.io/badge/status-field--tested-green)
 ![tool](https://img.shields.io/badge/tool-Claude%20Code-8A2BE2)
 ![focus](https://img.shields.io/badge/focus-token%20economy-brightgreen)
 ![approach](https://img.shields.io/badge/chunking-agentic-blue)
@@ -26,9 +26,7 @@
 
 ## 🔥 A dor (talvez você reconheça)
 
-Se você usa Claude Code todo dia, você já sentiu isso: a sessão incha, o `CLAUDE.md` vira um monstro que o modelo relê inteiro toda vez, e dar `/clear` significa perder o fio de uma tarefa pela metade. Eu vivi exatamente esse ciclo — e essas duas skills nasceram dele.
-
-O problema, no fundo, é um só: **toda sessão paga pedágio** para reler os arquivos de instrução do projeto (`CLAUDE.md`, memória, handovers). Estas skills atacam esse custo por duas frentes que se completam.
+Toda sessão do Claude Code paga pedágio: reler os arquivos de instrução do projeto (`CLAUDE.md`, memória, handovers) — inteiros, sempre, mesmo quando 90% daquilo não toca a tarefa do dia. Eu vivi esse ciclo num projeto real, e essas duas skills nasceram dele. Cada uma ataca uma metade do problema; as dores específicas estão na seção de cada skill.
 
 > ⚠️ **Sobre os percentuais:** os números abaixo são **casos reais que eu observei**, não promessa. O ganho depende do tamanho do seu arquivo e de quanto dele é "sempre-relevante" versus "sob demanda". Trate como ordem de grandeza.
 
@@ -60,7 +58,7 @@ Faixa típica que eu esperaria: **60–90%**, quando a maior parte do arquivo é
 
 ## 📤 `handover`
 
-**A dor.** Sessão inchou, tarefa pela metade, e você fica no dilema: carregar a conversa inteira pra frente (caríssimo) ou dar `/clear` e recomeçar reexplicando tudo (lento — e você SEMPRE esquece um porquê importante no caminho).
+**A dor.** Tarefa pela metade e um dilema sem saída boa: carregar a conversa inteira pra frente (caríssimo) ou dar `/clear` e recomeçar reexplicando tudo (lento — e você SEMPRE esquece um porquê importante no caminho).
 
 **O que ela faz.** Prepara a **saída limpa** da sessão. Escreve **um** documento seletivo em `documentacao/` — seletivo é regra, não adjetivo: só entra o que git + código + memória **não** contam sozinhos (o *porquê* das decisões com a alternativa descartada, o estado pendente, o próximo passo exato, os riscos). Atualiza um breadcrumb enxuto na memória e declara um **modo de retomada**: `rapida` (próximo passo não toca runtime) ou `verificada` (toca — e aí a sessão nova é obrigada a reconferir o estado vivo antes de afirmar qualquer coisa).
 
@@ -69,7 +67,7 @@ Faixa típica que eu esperaria: **60–90%**, quando a maior parte do arquivo é
 | Camada | Carrega quando | Custo |
 |---|---|---|
 | **Resume** | você retoma *esta* conversa | alto — e morre no `/clear` |
-| **Memória-índice** | **toda** sessão nova | baixo — breadcrumb terso que aponta |
+| **Memória-índice** | **toda** sessão nova | baixo — breadcrumb enxuto que aponta |
 | **Handover-arquivo** | só quando alguém o abre | zero até ser aberto |
 
 Cada informação fica na camada mais barata que ainda a entrega a tempo.
@@ -78,7 +76,7 @@ Cada informação fica na camada mais barata que ainda a entrega a tempo.
 
 | Aspecto | Sem cap | Com cap |
 |---|---|---|
-| Índice de memória | 96 linhas e subindo | **65 linhas (~32%)**, estável |
+| Índice de memória | 96 linhas e subindo | 65 linhas, estável (**redução de ~32%**) |
 | Crescimento por sessão | +1 linha permanente (O(n)) | limitado (O(1)) |
 
 Sem o cap, o índice voltaria a inflar em semanas — eu só descobri olhando o painel de context usage e me perguntando por que a memória pesava tanto.
@@ -97,7 +95,23 @@ Aqui está a parte que eu demorei a enxergar: `handover` **alimenta** a memória
 
 ## 🚀 Como usar
 
-Cada pasta tem um `SKILL.md` autocontido (frontmatter `name` + `description`). Coloque a pasta em um diretório de skills que o seu setup leia — tipicamente `.claude/skills/<nome>/SKILL.md` no projeto, ou o diretório global. O Claude carrega a skill quando a tarefa casa com a `description`, ou quando você a chama pelo nome.
+Estrutura do repositório:
+
+```
+skills/
+├── organizador-mem/
+│   └── SKILL.md
+└── handover/
+    └── SKILL.md
+```
+
+Instalação: copie cada pasta para o diretório de skills que o seu setup lê — tipicamente `.claude/skills/` no projeto, ou o diretório global.
+
+```bash
+git clone <este-repo> && cp -r skills/organizador-mem skills/handover <seu-projeto>/.claude/skills/
+```
+
+Cada `SKILL.md` é autocontido (frontmatter `name` + `description`). O Claude carrega a skill quando a tarefa casa com a `description`, ou quando você a chama pelo nome.
 
 O ciclo de vida de uma sessão longa com o `handover` é sempre este:
 
@@ -109,14 +123,10 @@ O ciclo de vida de uma sessão longa com o `handover` é sempre este:
 
 👉 A regra de ouro: **`/clear` só depois do `/handover`**. O handover é o que torna o `/clear` seguro.
 
-Se testar num projeto seu e os números baterem (ou não baterem), me conta — os percentuais daqui só valem o que valem porque vieram de caso real, e mais casos reais só melhoram a calibragem.
-
 ---
 
-## 🇧🇷 Made in Brazil
+## 🤝 Testou? Me conta
 
-Feitas para:
+Os percentuais daqui só valem o que valem porque vieram de caso real — e mais casos reais só melhoram a calibragem. Se rodar num projeto seu e os números baterem (ou **não** baterem), abre uma issue: o disclaimer lá de cima fica mais honesto a cada dado que chega.
 
-- projetos reais que incharam de verdade
-- restrições de custo de token
-- agentes que precisam lembrar sem pagar caro por isso
+Feito em Fortaleza. 🇧🇷
