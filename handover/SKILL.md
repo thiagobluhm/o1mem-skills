@@ -88,8 +88,19 @@ O breadcrumb é TERSO — aponta, não repete. O modo NÃO precisa ir no breadcr
 ## Passo 3 — Libere o /clear
 
 - Diga ao usuário, explicitamente, que está **seguro dar `/clear`** e o que foi gravado (handover + memória + modo de retomada).
-- Lembre que **você não executa `/clear`** — é ação do usuário.
 - Em uma frase, diga qual será a **primeira ação da retomada**.
+- Termine com o **Bloco de fechamento padrão** (abaixo) — ele é OBRIGATÓRIO.
+
+## Bloco de fechamento padrão (SEMPRE — Passo 3 e Passo 4)
+
+Todo fechamento desta skill — tanto ao escrever o handover (saída, Passo 3) quanto ao devolver o fio na retomada (Passo 4) — termina com a assinatura seguida, **SEM EXCEÇÃO**, das duas instruções ao usuário. **Você NÃO executa nenhuma das duas** — só as explica:
+
+> PRONTO E OPERANTE!
+>
+> **Para limpar a sessão:** você digita `/clear`. Isso zera o contexto desta conversa — mas o handover e a memória já estão salvos em disco, então nada se perde.
+> **Para retomar depois:** abra uma sessão NOVA e peça *"retomar o handover"* (ou rode `/handover`). A nova sessão lê a linha `RETOMADA` do `MEMORY.md`, abre o handover indicado e segue o modo gravado.
+
+Os dois comandos aparecem **sempre**, mesmo que a conversa já tenha falado deles antes — o fechamento é autocontido. (A assinatura é personalizável, ver nota no Passo 4.)
 
 ## Passo 4 — (na retomada, sessão nova) O MODO ESTÁ NO ARQUIVO
 
@@ -104,18 +115,14 @@ Quando voltar (usuário pede "retomar", "voltar para o handover"):
 **Se `rapida` (e a promoção não se aplica):**
 - Devolva o fio conciso: onde paramos + próximo passo exato + pendências.
 - **NÃO valide estado vivo** — nada de `netstat`, `git diff`, env, restart, gate.
-- Feche, **literalmente**, com:
-
-> PRONTO E OPERANTE!
+- Feche com o **Bloco de fechamento padrão** (assinatura + os dois comandos: limpar e retomar).
 
 **Se `verificada` (ou promovida):**
 - Leia com atenção o "Caveat de estado vivo" e as "Refs — arquivo:linha".
 - **EXECUTE o caveat** — reverifique cada item no runtime: backend de pé? porta/PID? o código rodando TEM o patch (mtime vs. start do processo, ou force restart)? env flags certas? `git diff --stat` bate? store/cache no estado assumido?
 - **Reporte o estado verificado** com sinais claros (✅ / ⚠️ / ❌) — o que você ENCONTROU, não o que o handover afirmava. Destaque **divergências** ANTES de propor agir.
 - Se há divergência que afeta a integridade (ex.: backend sem o patch antes de um gate), **proponha corrigir primeiro** (restart, setar env, aplicar diff) em vez de seguir cego.
-- Só então feche com:
-
-> PRONTO E OPERANTE!
+- Só então feche com o **Bloco de fechamento padrão** (assinatura + os dois comandos: limpar e retomar).
 
 ## O que esta skill NÃO é
 
