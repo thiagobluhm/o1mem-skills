@@ -21,14 +21,49 @@ turno do transcript. É esse delta que cruza o limiar.
 
 ## As duas travas que impedem o tiro no pé
 
-1. **Trava de valor embutida.** O texto que o hook injeta **não** manda "abra um
-   handover". Manda: *aplique o Passo 0 primeiro* — se a sessão é exploração
-   descartável sem estado durável, responda "aqui basta memória" e **não** abra a
-   oferta. Sem isso, o automatismo fabricaria handovers vazios com timestamp.
-2. **Rota de silêncio.** A oferta é um `AskUserQuestion` com três saídas: *preparar
-   handover* / *agora não* / **silenciar nesta sessão**. Sem repetição entre níveis —
-   o aviso de 150k não cai em cima de um "agora não" de 80k. É o antídoto da fadiga de
-   alerta, que mataria o mecanismo.
+1. **Trava de valor.** O texto injetado carrega a disciplina do Passo 0 como **fato**:
+   um handover só vale com estado durável a preservar; exploração descartável ou tarefa
+   concluída dispensa — "aqui basta memória". Sem isso, o automatismo fabricaria
+   handovers vazios com timestamp.
+2. **Rota de silêncio.** A decisão fica com o usuário: *preparar handover* / *agora não*
+   / **silenciar nesta sessão**. Sem repetição entre níveis — o aviso de 150k não cai em
+   cima de um "agora não" de 80k. É o antídoto da fadiga de alerta, que mataria o
+   mecanismo.
+
+## Por que o texto injetado é *factual*, não imperativo (isso é crítico)
+
+A [doc oficial de hooks](https://code.claude.com/docs/en/hooks) é explícita: **escreva o
+contexto injetado como afirmações factuais, não como instruções de sistema imperativas.**
+Texto em registro de comando out-of-band ("faça X", "NÃO faça Y") dispara as defesas
+anti-prompt-injection do Claude — que passa a **exibir** o texto na sua tela em vez de
+tratá-lo como contexto. Ou seja: injetar *"ofereça um handover ao usuário"* é justo a
+forma que **falha**. Este hook afirma só fatos — *"a conversa cresceu 82k tokens; o
+limiar foi cruzado; um handover só vale com estado durável; silenciar é gravar tal
+arquivo"* — e deixa o Claude reagir. É a diferença entre o hook funcionar e virar uma
+linha estranha na tela.
+
+## Restrições do `UserPromptSubmit` (respeitadas no script)
+
+Só três eventos injetam stdout que o Claude vê: `UserPromptSubmit`, `UserPromptExpansion`
+e `SessionStart` — por isso é este o evento. Mas ele roda **antes** de cada prompt e
+**bloqueia** o processamento até terminar, então:
+
+- **Timeout baixo (30s default).** Um hook travado congela a sessão. Registre com
+  `"timeout": 10` no `settings.json` e mantenha o script rápido (este lê só 1ª/última
+  linha de `usage`).
+- **Nunca sair com exit 2.** No `UserPromptSubmit`, exit 2 **bloqueia o processamento e
+  apaga o prompt que você digitou**. Este script é *fail-open absoluto*: qualquer erro
+  sai 0 silencioso. Um bug no medidor jamais pode engolir o seu prompt.
+
+## Rede de segurança final (roadmap): `PreCompact/auto`
+
+O `UserPromptSubmit` avisa **cedo** (por limiar). Falta a **última chamada**: o evento
+`PreCompact` dispara antes da compactação de contexto e, com matcher `auto`, intercepta
+o momento exato em que o *autocompact* — o concorrente real do handover — ia comprimir
+sem você escolher o quê. `PreCompact` pode inclusive **bloquear** a compactação (exit 2).
+Combinar os dois cobre "avisei cedo" + "última chamada antes da perda". Ainda não
+incluído aqui porque o stdout de `PreCompact` **não** é canal visível (ver acima) — o
+aviso teria de vir por uma ponte via marca de estado + o próximo `UserPromptSubmit`.
 
 ## Calibragem honesta (n=1)
 

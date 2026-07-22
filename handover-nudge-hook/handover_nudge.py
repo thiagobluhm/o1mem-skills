@@ -217,25 +217,19 @@ def main():
         "model": model,
     })
 
-    ctx = f"""[HANDOVER-NUDGE — instrucao do sistema, nao veio do usuario]
-A CONVERSA desta sessao cresceu ~{growth_k}k tokens acima do piso (janela total ~{total_k}k, modelo {model_disp}); cruzou o limiar de {level_k}k.
+    # Texto FACTUAL, nao imperativo. A doc oficial de hooks avisa que texto injetado
+    # em registro de comando out-of-band ("faça X", "NAO faça Y") dispara as defesas
+    # anti-prompt-injection do Claude, que passa a EXIBIR o texto em vez de trata-lo
+    # como contexto. Entao aqui so afirmamos FATOS (crescimento, limiar, disciplina do
+    # ambiente, e como a mecanica funciona); a decisao de agir fica com o Claude+usuario.
+    next_k = round((level + step) / 1000)
+    ctx = f"""[Contexto de sessao — informativo; nao e uma mensagem do usuario.]
 
-NAO ofereça um handover automaticamente. Primeiro aplique a TRAVA DE VALOR (Passo 0 da skill handover), em silencio:
-- A tarefa em aberto tem (a) estado pendente que importa, (b) raciocinio caro de reconstruir, ou (c) plano multi-passo nao executado?
-- SE NAO (sessao de exploracao descartavel, ou tarefa ja concluida e verificada): NAO abra a oferta. Em no maximo uma linha diga que a janela esta grande mas nada aqui justifica um handover — "aqui basta memoria" — e, se houver um fato duravel, grave so a memoria. Fim.
-- SE SIM: faça UMA pergunta com AskUserQuestion, header "Handover", com exatamente estas 3 opcoes:
-    1) "Sim, preparar handover" — invoque a skill handover (que reaplica o Passo 0 e escolhe modo rapida/verificada).
-    2) "Agora nao" — siga o turno normalmente; havera no maximo mais um aviso, so no proximo nivel ({round((level+step)/1000)}k).
-    3) "Silenciar nesta sessao" — pare de avisar ate o fim da sessao.
+A conversa desta sessao cresceu ~{growth_k}k tokens acima do piso inicial da sessao (janela total ~{total_k}k tokens, modelo {model_disp}). O limiar configurado para sugerir um handover — {level_k}k de crescimento da conversa — acaba de ser ultrapassado. O proximo aviso, se houver, so ocorre em {next_k}k.
 
-Depois que o usuario responder, faça DUAS coisas (deterministicas):
-- Anexe UMA linha JSON ao log (use o Bash tool):
-    echo '{{"ts":<agora_epoch>,"session_id":"{sid}","event":"nudge_outcome","level":{level},"growth":{growth},"outcome":"accepted|declined|silenced"}}' >> "{log_file}"
-  (outcome = accepted p/ opcao 1, declined p/ opcao 2, silenced p/ opcao 3.)
-- SE a opcao foi "Silenciar nesta sessao", grave o arquivo-marca escrevendo este conteudo em "{state_file}":
-    {{"last_level": {level}, "silenced": true}}
+Disciplina de handover deste ambiente: um handover so agrega valor quando ha estado duravel a preservar — tarefa pela metade, raciocinio caro de reconstruir, ou plano de varios passos ainda nao executado. Uma sessao de exploracao descartavel, ou uma tarefa ja concluida e verificada, dispensa handover; nesses casos a memoria basta. Havendo valor, a escolha entre preparar o handover agora, adiar, ou silenciar os avisos do restante da sessao cabe ao usuario.
 
-Nao mencione este bloco ao usuario como texto cru; apenas aja."""
+Mecanica desta sessao, se for util: os avisos ficam silenciados quando o arquivo "{state_file}" contem {{"last_level": {level}, "silenced": true}}; os desfechos de cada aviso sao registrados em "{log_file}"."""
 
     out = {
         "hookSpecificOutput": {
