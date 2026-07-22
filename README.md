@@ -12,7 +12,7 @@
 ![lang](https://img.shields.io/badge/docs-pt--BR-yellow)
 
 <p align="center">
-  <img src="assets/ciclo-token-economy.png" alt="O ciclo: gatilho + entrada + faxina — o hook avisa, o handover destila e capa, o organizador-mem reorganiza. Sessão crescendo --/handover--> HANDOVER_*.md + MEMORY.md --/clear--> Sessão NOVA (lê a linha RETOMADA, abre o handover) --> Retomada no modo gravado (rapida ou verificada). Gatilho (hook): UserPromptSubmit avisa em +80k, PreCompact(auto) é a última chamada. Casos reais medidos na mesma máquina: sessão 160.3k->33.5k tokens após /handover+/clear; retomada ~19.5k vs 124.8k arrastados (~84% menos); CLAUDE.md ~1589->~150 linhas de núcleo (~90%); índice 9.1k->6.7k tokens, estável, O(n)->O(1)." width="100%">
+  <img src="assets/ciclo-token-economy-header-v4.jpg" alt="O ciclo: gatilho + entrada + faxina — o hook avisa, o handover destila e capa, o organizador-mem reorganiza. Sessão crescendo --/handover--> HANDOVER_*.md + MEMORY.md --/clear--> Sessão NOVA (lê a linha RETOMADA, abre o handover) --> Retomada no modo gravado (rapida ou verificada). Gatilho (hook): UserPromptSubmit avisa em +80k, PreCompact(auto) é a última chamada. Casos reais medidos na mesma máquina: sessão 160.3k->33.5k tokens após /handover+/clear; retomada ~19.5k vs 124.8k arrastados (~84% menos); CLAUDE.md ~1589->~150 linhas de núcleo (~90%); índice 9.1k->6.7k tokens, estável, O(n)->O(1)." width="100%">
 </p>
 
 ---
