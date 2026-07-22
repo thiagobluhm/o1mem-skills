@@ -12,8 +12,10 @@
 ![lang](https://img.shields.io/badge/docs-pt--BR-yellow)
 
 <p align="center">
-  <img src="assets/ciclo-token-economy-header-v5.jpg" alt="O ciclo: gatilho + entrada + faxina — o hook avisa, o handover destila e capa, o organizador-mem reorganiza. Sessão crescendo --/handover--> HANDOVER_*.md + MEMORY.md --/clear--> Sessão NOVA (lê a linha RETOMADA, abre o handover) --> Retomada no modo gravado (rapida ou verificada). Gatilho (hook): UserPromptSubmit avisa em +80k, PreCompact(auto) é a última chamada. Casos reais medidos na mesma máquina: sessão 160.3k->33.5k tokens após /handover+/clear; retomada ~19.5k vs 124.8k arrastados (~84% menos); CLAUDE.md ~1589->~150 linhas de núcleo (teto ~90% por sessão, média menor com p~0.50 de abertura de satélite); índice 9.1k->6.7k tokens, estável, O(n)->O(1)." width="100%">
+  <img src="assets/ciclo-token-economy-header-v7.jpg" alt="O(1)memo, o mascote, conduz o ciclo: gatilho + entrada + faxina — o hook avisa, o handover destila e capa, o organizador-mem reorganiza. Sessão crescendo --/handover--> HANDOVER_*.md + MEMORY.md --/clear--> Sessão NOVA (lê a linha RETOMADA, abre o handover) --> Retomada no modo gravado (rapida ou verificada). Gatilho (hook): UserPromptSubmit avisa em +80k, PreCompact(auto) é a última chamada. Casos reais medidos na mesma máquina: sessão 160.3k->33.5k tokens após /handover+/clear; retomada ~19.5k vs 124.8k arrastados (~84% menos); CLAUDE.md ~1589->~150 linhas de núcleo (teto ~90% por sessão, média menor com p~0.50 de abertura de satélite); índice 9.1k->6.7k tokens, estável, O(n)->O(1)." width="100%">
 </p>
+
+<p align="center"><sub>👆 este é o <b>O(1)memo</b> — o mascote do repo. O nome é a tese: <code>O(1)</code> (a memória cresce em tempo constante, graças ao <em>cap</em>) + <code>memo</code> (memória). Ele avisa, destila e capa pra você não re-pagar pedágio de contexto.</sub></p>
 
 ---
 
@@ -87,6 +89,12 @@ Cada informação fica na camada mais barata que ainda a entrega a tempo.
 | Crescimento por sessão | +1 linha permanente (O(n)) | limitado (O(1)) |
 
 Sem o cap, o índice voltaria a inflar em semanas — eu só descobri olhando o painel de context usage e me perguntando por que a memória pesava tanto.
+
+> **Por que O(1), em uma respirada.** O cap troca uma **inclinação** por um **teto**. Sem ele, cada handover deposita uma linha que nunca sai — 10 sessões, 10 linhas; 100 sessões, 100 linhas: tamanho = `f(nº de sessões)`, cresce **para sempre (O(n))**. Com cap = 2, ao inserir a nova a mais antiga excedente é deletada — 10, 100 ou 1000 sessões → **sempre 2 linhas**. A variável `n` saiu da fórmula: não é "cresce devagar", é "não cresce" (**O(1)**). E isso importa mais que qualquer outra economia porque essa é a **única camada paga em toda sessão, para sempre** — o pior lugar do mundo para um acumulador morar.
+>
+> **O rigor que o nome do repo cobra.** O que é O(1) é o **histórico de RETOMADAs**, não o `MEMORY.md` inteiro: as linhas-índice que apontam para cada `project_*.md` ainda crescem uma por projeto. Sendo exato: **O(1) por sessão, O(p) por projetos** — e continua sendo a afirmação forte, porque sessão acontece centenas de vezes e projeto novo, meia dúzia. Por isso a precisão é *"crescimento do índice **por sessão**"*, não tempo de acesso.
+>
+> **E o que custou: nada.** As RETOMADAs antigas não sumiram — os `HANDOVER_*.md` em `documentacao/` são o registro permanente. O cap só tirou a cópia da camada cara (índice, paga sempre) e deixou na barata (arquivo, pago só quando aberto). Não foi `organizador-mem` disfarçado — foi mover de uma camada carregada para uma **diferida**. Economia real, não contábil.
 
 **A intuição, em uma frase:** *a memória é o ÍNDICE — aponta, não repete.* A camada que carrega toda sessão tem que ser a mais enxuta possível: só precisa dizer **qual arquivo abrir** e **qual o próximo passo**. E como "o que era verdade quando escrevi" ≠ "o que é verdade agora", o modo `verificada` existe para uma coisa: economia de token **nunca** vale uma afirmação falsa sobre o runtime.
 
