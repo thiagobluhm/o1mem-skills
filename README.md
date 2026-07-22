@@ -11,6 +11,10 @@
 ![approach](https://img.shields.io/badge/chunking-agentic-blue)
 ![lang](https://img.shields.io/badge/docs-pt--BR-yellow)
 
+<p align="center">
+  <img src="assets/ciclo-token-economy.png" alt="O ciclo: entrada capada + faxina agêntica — handover alimenta a memória; organizador-mem a reorganiza quando incha. Sessão inchada --/handover--> HANDOVER_*.md + MEMORY.md --/clear--> Sessão NOVA --> Retomada no modo gravado. Casos reais: CLAUDE.md ~1589->~150 linhas (~90%); índice de memória 96->65 linhas (~32%, O(n)->O(1))." width="100%">
+</p>
+
 ---
 
 ## ⚡ TL;DR
