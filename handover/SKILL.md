@@ -19,6 +19,19 @@ Você vai preparar a **saída limpa** de uma sessão: destilar o estado de uma t
 
 O handover diz o que era verdade **quando foi escrito**. O processo pode ter sido morto, reiniciado com código velho, o env pode ter mudado. `feedback_verificar_codigo_antes_de_afirmar` e `feedback_teste_atesta_erro_nao_passa` valem aqui. Por isso existe o modo `verificada` — e por isso a promoção de modo na retomada (Passo 4) é sempre permitida, nunca o rebaixamento.
 
+## Terceiro princípio: paralelize o MECÂNICO com subagentes Haiku (não o julgamento)
+
+Escrever e retomar um handover têm, cada um, uma **parte mecânica e independente** (rodar comandos, ler arquivos para achar `arquivo:linha`, coletar evidência de runtime) e uma **parte de julgamento** (decidir o modo, destilar o *porquê*, reconciliar divergências). O mecânico **não precisa do modelo caro**: dispare em paralelo para subagentes **Haiku** (`Agent` com `model: "haiku"`, `subagent_type: "Explore"` para leitura ou `"general-purpose"` para rodar comandos). Uma leva de chamadas `Agent` no MESMO bloco roda concorrente.
+
+| Fica com o AGENTE PRINCIPAL (julgamento — nunca delega) | Vai para subagentes HAIKU (mecânico — paraleliza) |
+|---|---|
+| Decidir o modo (Passo 0.5) e o valor (Passo 0) | Ler os arquivos citados e devolver os `arquivo:linha` dos refs |
+| Destilar decisões, *porquê*, alternativa descartada | **Pré-coletar a evidência do "Caveat de estado vivo"** (git ls-remote, `git diff --stat`, PID/porta, mtime vs. start) |
+| Redigir a prosa do handover e o breadcrumb | Regenerar índices derivados (ex.: gerador de índice de handovers) |
+| Na retomada: **reconciliar** ✅/⚠️/❌ e decidir agir | Na retomada `verificada`: rodar **cada item do caveat** como uma checagem isolada e devolver o resultado cru |
+
+**Por que Haiku, não o principal:** essas tarefas são "rode isto e me diga o que deu" — sem contexto de sessão. Um Haiku frio as faz bem e barato; gastar o modelo grande nelas é desperdício. **Guarda-corpo:** um subagente **nunca** escreve a prosa do handover, decide o modo, nem reconcilia divergência — ele só **coleta**; quem interpreta é o principal. **Fail-open:** se um subagente falhar/demorar, o principal faz aquele item inline — a paralelização acelera, não é caminho crítico.
+
 ## Passo 0 — TRAVA DE VALOR (não pule)
 
 Handover **só vale a pena** se a tarefa tem pelo menos UM de:
@@ -42,6 +55,8 @@ O modo escolhido vai na **primeira linha do handover** (ver template). É o arte
 ## Passo 1 — Escreva o handover (SELETIVO, não dump)
 
 Arquivo: `documentacao/HANDOVER_<slug-da-tarefa>_<YYYYMMDD>.md`.
+
+> **Acelere (3º princípio):** ANTES de redigir, dispare em paralelo os subagentes Haiku que coletam o mecânico — os `arquivo:linha` dos refs e, no modo `verificada`, a evidência do "Caveat de estado vivo". Você redige enquanto eles rodam e cola o que voltou.
 
 **Regra de ouro:** só entra o que **git + código + memória NÃO contam sozinhos**.
 - ❌ NÃO liste "arquivos/funções tocados" como corpo — `git diff` já mostra. Aponte `arquivo:linha` só para achar rápido.
@@ -126,7 +141,7 @@ Quando voltar (usuário pede "retomar", "voltar para o handover"):
 
 **Se `verificada` (ou promovida):**
 - Leia com atenção o "Caveat de estado vivo" e as "Refs — arquivo:linha".
-- **EXECUTE o caveat** — reverifique cada item no runtime: backend de pé? porta/PID? o código rodando TEM o patch (mtime vs. start do processo, ou force restart)? env flags certas? `git diff --stat` bate? store/cache no estado assumido?
+- **EXECUTE o caveat — em paralelo (3º princípio):** dispare cada item como um subagente Haiku isolado no mesmo bloco (ou uma leva de comandos concorrentes) e colete o cru; reverifique cada item no runtime: backend de pé? porta/PID? o código rodando TEM o patch (mtime vs. start do processo, ou force restart)? env flags certas? `git diff --stat` bate? store/cache no estado assumido? **A reconciliação ✅/⚠️/❌ é sua, não do subagente.**
 - **Reporte o estado verificado** com sinais claros (✅ / ⚠️ / ❌) — o que você ENCONTROU, não o que o handover afirmava. Destaque **divergências** ANTES de propor agir.
 - Se há divergência que afeta a integridade (ex.: backend sem o patch antes de um gate), **proponha corrigir primeiro** (restart, setar env, aplicar diff) em vez de seguir cego.
 - Só então feche com o **Bloco de fechamento padrão** (assinatura + os dois comandos: limpar e retomar).

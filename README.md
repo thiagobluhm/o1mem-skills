@@ -115,6 +115,12 @@ As duas skills resolvem o **como** estancar e limpar. Faltava o **quando** — e
 
 O número que ele observa **não** é o total da janela — `system`, `tools`, `memória` e `skills` são ~fixos, não é isso que o handover economiza. Ele mede **`total_atual − baseline_da_sessão`**: o custo de re-pagar a *conversa* ao arrastá-la para frente. É esse delta que dispara.
 
+<p align="center">
+  <img src="assets/handover-nudge-toast.png" alt="Toast nativo do Windows: 'Claude Code — hora de um /handover? A conversa cresceu ~504k tokens. Considere /handover antes do /clear.'" width="60%">
+</p>
+
+> O aviso chega como **toast nativo do sistema** (`notify_windows`, zero dependências) — você o vê mesmo de olho fora do terminal. Paridade nos dois runtimes (rótulo "Claude Code" ou "Hermes").
+
 Duas travas o impedem de virar spam:
 
 - **Trava de valor.** Ele não manda "abra um handover" — manda *aplicar o Passo 0 primeiro*. Exploração descartável sem estado durável recebe *"aqui basta memória"*, **nunca** um handover vazio com timestamp.
@@ -151,6 +157,10 @@ O ciclo inteiro medido no painel *Context usage* do Claude Code — os três mom
 ## 📈 `dashboard` — a evidência acima, mas da **sua** calibragem
 
 A tabela ali de cima é de *uma* sessão minha. O painel em [`dashboard/`](dashboard/) transforma o seu próprio `handover-nudge.log` (JSONL que o hook grava a cada aviso) nesses mesmos números — sem preencher nada à mão.
+
+<p align="center">
+  <img src="assets/dashboard-o1mem.png" alt="Painel de Economia do O(1)mem: 3 sessões, 729.230 tokens de conversa evitada, baseline médio 43.323, economia R$ 19,29; pizza 'onde vai a janela' com Messages 89,4% e Fixo 10,6%, barras por sessão e tabela com modelo por linha." width="88%">
+</p>
 
 ```bash
 python dashboard/abrir_dashboard.py
