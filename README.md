@@ -6,7 +6,7 @@
 ---
 
 ![status](https://img.shields.io/badge/status-field--tested-green)
-![tool](https://img.shields.io/badge/tool-Claude%20Code-8A2BE2)
+![tool](https://img.shields.io/badge/runtime-Claude%20Code%20%2B%20Hermes-8A2BE2)
 ![focus](https://img.shields.io/badge/focus-token%20economy-brightgreen)
 ![approach](https://img.shields.io/badge/chunking-agentic-blue)
 ![lang](https://img.shields.io/badge/docs-pt--BR-yellow)
@@ -153,18 +153,23 @@ O ciclo inteiro medido no painel *Context usage* do Claude Code — os três mom
 Estrutura do repositório:
 
 ```
-skills/
-├── organizador-mem/
-│   └── SKILL.md
-├── handover/
-│   └── SKILL.md
-└── handover-nudge-hook/        # não é skill — é um hook UserPromptSubmit
-    ├── handover_nudge.py
-    ├── handover-nudge.config.json
-    └── README.md
+o1mem/
+├── handover/SKILL.md              # Claude Code (implementação de referência)
+├── organizador-mem/SKILL.md       # Claude Code
+├── handover-nudge-hook/           # hook UserPromptSubmit (síncrono)
+│   ├── handover_nudge.py
+│   ├── handover-nudge.config.json
+│   └── README.md
+├── adapters/
+│   └── hermes/                    # porta para o Hermes Agent (async watchdog)
+│       ├── README.md
+│       ├── handover/SKILL.md
+│       ├── organizador-mem/SKILL.md
+│       └── nudge-watchdog/
+└── PORTABILITY.md                 # mapeamento de ferramentas — fonte única
 ```
 
-Instalação das **skills**: copie cada pasta para o diretório de skills que o seu setup lê — tipicamente `.claude/skills/` no projeto, ou o diretório global. O **hook** se instala diferente (é um `UserPromptSubmit` no `settings.json`) — ver [`handover-nudge-hook/README.md`](handover-nudge-hook/README.md).
+Instalação das **skills** (Claude Code): copie cada pasta para o diretório de skills que o seu setup lê — tipicamente `.claude/skills/` no projeto, ou o diretório global. O **hook** se instala diferente (é um `UserPromptSubmit` no `settings.json`) — ver [`handover-nudge-hook/README.md`](handover-nudge-hook/README.md).
 
 ```bash
 git clone <este-repo> && cp -r skills/organizador-mem skills/handover <seu-projeto>/.claude/skills/
@@ -181,6 +186,21 @@ O ciclo de vida de uma sessão longa com o `handover` é sempre este:
 | **Retomar depois** | sessão NOVA → *"retomar o handover"* (ou `/handover`) | lê a linha `RETOMADA` do `MEMORY.md`, abre o handover indicado e segue o modo gravado |
 
 👉 A regra de ouro: **`/clear` só depois do `/handover`**. O handover é o que torna o `/clear` seguro.
+
+---
+
+## 🔌 Roda em (sem lock-in)
+
+O O(1)mem **não é do Claude Code** — é uma tese sobre onde o estado mora (índice barato sempre + arquivo caro sob demanda + teto O(1)). Isso independe de runtime.
+
+| Runtime | Onde | Gatilho |
+|---|---|---|
+| **Claude Code** | raiz do repo (implementação de referência) | hook `UserPromptSubmit` — **síncrono**, instantâneo |
+| **Hermes Agent** | [`adapters/hermes/`](adapters/hermes/) | cron watchdog — **assíncrono**, não bloqueia a conversa |
+
+As skills são as **mesmas** — muda o vocabulário de ferramentas (`Write`→`write_file`, `AskUserQuestion`→`clarify`, `/clear`→`/reset`…) e, no gatilho, o modelo de execução. A tradução completa e o que um runtime novo precisa ter estão em **[`PORTABILITY.md`](PORTABILITY.md)**.
+
+> A porta do Hermes traz uma **sacada e um preço honesto**: o watchdog async não bloqueia o caminho crítico (ganho), mas não é instantâneo e, com `deliver=local` no TUI, salva o aviso sem te notificar ativamente. Os trade-offs e as opções (disparar junto da compressão nativa, `deliver=telegram`, ou deixar manual) estão em [`adapters/hermes/README.md`](adapters/hermes/README.md) — nada varrido pra debaixo do tapete.
 
 ---
 
