@@ -162,6 +162,35 @@ def log_event(evt):
         pass
 
 
+def notify_windows(title, message):
+    """Dispara uma notificacao toast nativa do Windows via PowerShell.
+
+    Usa a API Windows.UI.Notifications direto -- nao requer instalar modulo.
+    Fail-open: qualquer erro e engolido (nunca afeta o turno).
+    """
+    try:
+        import subprocess
+        t = title.replace('"', "'").replace("\n", " ")
+        m = message.replace('"', "'").replace("\n", " ")
+        ps = (
+            '[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType=WindowsRuntime] | Out-Null; '
+            '$tpl = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent([Windows.UI.Notifications.ToastTemplateType]::ToastText02); '
+            '$tx = $tpl.GetElementsByTagName("text"); '
+            f'$tx.Item(0).AppendChild($tpl.CreateTextNode("{t}")) | Out-Null; '
+            f'$tx.Item(1).AppendChild($tpl.CreateTextNode("{m}")) | Out-Null; '
+            '$toast = [Windows.UI.Notifications.ToastNotification]::new($tpl); '
+            '$notifier = [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier("Claude Code"); '
+            '$notifier.Show($toast)'
+        )
+        subprocess.run(
+            ["powershell.exe", "-NoProfile", "-Command", ps],
+            timeout=15,
+            capture_output=True,
+        )
+    except Exception:
+        pass
+
+
 def main():
     if os.environ.get("CLAUDE_HANDOVER_NUDGE_DISABLE") == "1":
         return
@@ -238,6 +267,13 @@ def main():
         "threshold": threshold,
         "model": model,
     })
+
+    # Toast nativo do Windows (canto da tela) -- paridade com o watchdog do Hermes.
+    # Alem do texto injetado no contexto, cutuca o usuario fora do terminal.
+    notify_windows(
+        "Claude Code — hora de um /handover?",
+        f"A conversa cresceu ~{growth_k}k tokens. Considere /handover antes do /clear.",
+    )
 
     # Texto FACTUAL, nao imperativo. A doc oficial de hooks avisa que texto injetado
     # em registro de comando out-of-band ("faça X", "NAO faça Y") dispara as defesas

@@ -34,7 +34,7 @@ Precedência: env (`HERMES_HANDOVER_NUDGE_THRESHOLD`, `_STEP`, `_DISABLE=1`) > `
 
 Via a ferramenta `cronjob` do Hermes, a cada 10 min, com `no_agent=True` (padrão watchdog: stdout vazio = nada entregue; stdout não-vazio = entregue).
 
-> ⚠️ **Entrega:** com `deliver=local` no TUI o output é salvo mas **não** te notifica ativamente. Para receber o toque de fato, use `deliver=telegram` (ou outro gateway). Ver a seção "o preço honesto" em [`../README.md`](../README.md).
+> 🔔 **Entrega:** independente do `deliver` do cron, o script dispara um **toast nativo do Windows** (`notify_windows()`, via PowerShell + `Windows.UI.Notifications`, sem instalar nada) quando o limiar é cruzado — então o aviso te alcança fora do terminal mesmo com `deliver=local`. Fail-open: em outro SO ou se o WinRT falhar, o toast é pulado silenciosamente. Para aviso **remoto** (celular/servidor headless), aí sim aponte o cron a `deliver=telegram`. Detalhes em [`../README.md`](../README.md) → "canal de entrega".
 
 ## Texto do aviso
 

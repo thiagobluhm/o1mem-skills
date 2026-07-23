@@ -171,6 +171,36 @@ def log_event(evt):
         pass
 
 
+def notify_windows(title, message):
+    """Dispara uma notificacao toast nativa do Windows via PowerShell.
+
+    Nao requer instalacao de modulo (usa a API Windows.UI.Notifications direto).
+    Fail-open: qualquer erro e engolido.
+    """
+    try:
+        import subprocess
+        # Escapa aspas duplas para o literal PowerShell
+        t = title.replace('"', "'").replace("\n", " ")
+        m = message.replace('"', "'").replace("\n", " ")
+        ps = (
+            '[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType=WindowsRuntime] | Out-Null; '
+            '$tpl = [Windows.UI.Notifications.ToastNotificationManager]::GetTemplateContent([Windows.UI.Notifications.ToastTemplateType]::ToastText02); '
+            '$tx = $tpl.GetElementsByTagName("text"); '
+            f'$tx.Item(0).AppendChild($tpl.CreateTextNode("{t}")) | Out-Null; '
+            f'$tx.Item(1).AppendChild($tpl.CreateTextNode("{m}")) | Out-Null; '
+            '$toast = [Windows.UI.Notifications.ToastNotification]::new($tpl); '
+            '$notifier = [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier("Hermes"); '
+            '$notifier.Show($toast)'
+        )
+        subprocess.run(
+            ["powershell.exe", "-NoProfile", "-Command", ps],
+            timeout=15,
+            capture_output=True,
+        )
+    except Exception:
+        pass
+
+
 def main():
     if os.environ.get("HERMES_HANDOVER_NUDGE_DISABLE") == "1":
         return
@@ -218,8 +248,7 @@ def main():
 
     # Texto FACTUAL, nao imperativo — mesma disciplina do hook original
     msg = (
-        f"⏰ A conversa desta sessao cresceu ~{growth_k}k tokens "
-        f"(janela total ~{round(total / 1000) if total else '?'}k, {model}). "
+        f"⏰ A conversa desta sessao cresceu ~{growth_k}k tokens. "
         f"O limiar para sugerir um handover ({level_k}k) foi ultrapassado. "
         f"Proximo aviso so em {next_k}k.\n\n"
         f"Disciplina: um handover so agrega valor quando ha estado duravel a preservar "
@@ -227,6 +256,13 @@ def main():
         f"ainda nao executado. Sessao de exploracao descartavel ou tarefa concluida dispensa "
         f"handover; nesses casos a memoria basta.\n\n"
         f"Se for util: rode /skill handover para preparar a saida limpa antes do /reset."
+    )
+
+    # Notificacao toast nativa do Windows (canal principal no desktop)
+    notify_windows(
+        f"Hermes - Hora do /handover? (+{growth_k}k)",
+        f"A conversa cresceu ~{growth_k}k tokens (limiar {level_k}k cruzado). "
+        f"Se ha estado duravel a preservar, rode /skill handover antes do /reset.",
     )
 
     print(msg)

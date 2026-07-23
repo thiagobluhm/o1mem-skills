@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>O(1)mem · Painel de Economia</title>
+<style>
+  :root{
+    color-scheme: light dark;
+    --plane:#f9f9f7; --surface:#fcfcfb; --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+    --grid:#e1e0d9; --axis:#c3c2b7; --series:#2a78d6; --good:#0ca30c; --goodink:#006300;
+    --border:rgba(11,11,11,0.10); --shadow:rgba(11,11,11,0.06);
+    --font: system-ui,-apple-system,"Segoe UI",sans-serif;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:where(:not([data-theme="light"])){
+      --plane:#0d0d0d; --surface:#1a1a19; --ink:#fff; --ink2:#c3c2b7; --muted:#898781;
+      --grid:#2c2c2a; --axis:#383835; --series:#3987e5; --good:#0ca30c; --goodink:#0ca30c;
+      --border:rgba(255,255,255,0.10); --shadow:rgba(0,0,0,0.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    --plane:#0d0d0d; --surface:#1a1a19; --ink:#fff; --ink2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --series:#3987e5; --good:#0ca30c; --goodink:#0ca30c;
+    --border:rgba(255,255,255,0.10); --shadow:rgba(0,0,0,0.4);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--plane);color:var(--ink);font-family:var(--font);
+    line-height:1.5;-webkit-font-smoothing:antialiased;padding:24px}
+  .wrap{max-width:1040px;margin:0 auto}
+  header{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 14px;margin-bottom:4px}
+  h1{font-size:22px;margin:0;font-weight:700}
+  h1 .coin{opacity:.9}
+  .sub{color:var(--ink2);font-size:13.5px;margin:0 0 20px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+    box-shadow:0 1px 2px var(--shadow);padding:18px}
+  /* drop / load */
+  #drop{border:1.5px dashed var(--axis);border-radius:12px;padding:22px;text-align:center;
+    color:var(--ink2);cursor:pointer;transition:border-color .15s,background .15s;margin-bottom:16px}
+  #drop.hot{border-color:var(--series);background:color-mix(in srgb,var(--series) 8%,transparent)}
+  #drop b{color:var(--ink)}
+  #drop .hint{font-size:12.5px;color:var(--muted);margin-top:6px}
+  .row{display:flex;flex-wrap:wrap;gap:14px}
+  .ctrl{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--ink2)}
+  .ctrl input{font:inherit;font-size:14px;padding:7px 9px;border:1px solid var(--border);
+    border-radius:8px;background:var(--surface);color:var(--ink);width:170px}
+  .ctrl small{color:var(--muted);font-size:11px}
+  .banner{font-size:12.5px;color:var(--ink2);background:color-mix(in srgb,var(--series) 7%,transparent);
+    border:1px solid var(--border);border-radius:8px;padding:8px 11px;margin:14px 0}
+  /* KPI tiles */
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:12px;margin:18px 0}
+  .tile{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 15px}
+  .tile .lbl{font-size:12px;color:var(--ink2);margin-bottom:6px;display:flex;align-items:center;gap:5px}
+  .tile .val{font-size:26px;font-weight:700;letter-spacing:-.5px}
+  .tile.good .val{color:var(--goodink)}
+  .tile .val small{font-size:13px;font-weight:600;color:var(--ink2);letter-spacing:0}
+  /* chart */
+  .chartwrap{overflow-x:auto}
+  svg{display:block;font-family:var(--font)}
+  .axis-lbl{fill:var(--muted);font-size:11px}
+  .grid-line{stroke:var(--grid);stroke-width:1}
+  .base-line{stroke:var(--axis);stroke-width:1}
+  .thr-line{stroke:var(--good);stroke-width:1.5;stroke-dasharray:4 3;opacity:.8}
+  .thr-lbl{fill:var(--goodink);font-size:10.5px;font-weight:600}
+  .bar{fill:var(--series);rx:4}
+  .bar:hover{opacity:.82}
+  h2{font-size:15px;margin:26px 0 4px}
+  .note{font-size:12px;color:var(--muted)}
+  .foot{margin-top:22px;font-size:12px;color:var(--ink2)}
+  .foot b{color:var(--ink)}
+  .foot ul{margin:6px 0 0;padding-left:18px}
+  table{border-collapse:collapse;width:100%;font-size:13px;margin-top:8px}
+  th,td{text-align:right;padding:6px 10px;border-bottom:1px solid var(--border);font-variant-numeric:tabular-nums}
+  th:first-child,td:first-child{text-align:left;font-variant-numeric:normal}
+  th{color:var(--ink2);font-weight:600}
+  .toggle{background:none;border:1px solid var(--border);color:var(--ink2);font:inherit;font-size:12.5px;
+    padding:5px 11px;border-radius:8px;cursor:pointer;margin-top:10px}
+  #tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--plane);font-size:12px;
+    padding:6px 9px;border-radius:7px;opacity:0;transition:opacity .1s;white-space:nowrap;z-index:9;
+    font-variant-numeric:tabular-nums}
+  .hidden{display:none}
+  .empty{color:var(--muted);text-align:center;padding:30px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><span class="coin">🪙</span> O(1)mem · Painel de Economia</h1>
+  </header>
+  <p class="sub">Carregue o <code>handover-nudge.log</code> (JSONL) ou um CSV. O painel traduz o crescimento de conversa medido em <b>tokens economizados</b> e <b>R$</b> — com o modelo de cálculo explícito no rodapé.</p>
+
+  <div id="drop" tabindex="0" role="button" aria-label="Carregar arquivo">
+    <b>Solte o arquivo aqui</b> ou clique para escolher
+    <div class="hint">.log · .jsonl · .json · .csv &nbsp;—&nbsp; ou <a href="#" id="demo">usar dados de exemplo</a></div>
+    <input type="file" id="file" accept=".log,.jsonl,.json,.csv,.txt" class="hidden">
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <label class="ctrl">Modelo (preço input/1M)
+        <select id="model">
+          <option value="5">Opus 4.8 / 4.7 / 4.6 — US$5</option>
+          <option value="10">Fable 5 — US$10</option>
+          <option value="3">Sonnet 5 / 4.6 — US$3</option>
+          <option value="2">Sonnet 5 (intro) — US$2</option>
+          <option value="1">Haiku 4.5 — US$1</option>
+        </select>
+        <small>auto-detecta do log; senão usa este</small>
+      </label>
+      <label class="ctrl">Câmbio USD→BRL
+        <input id="fx" type="number" min="0" step="0.01" value="5.40">
+        <small>ajuste ao câmbio do dia</small>
+      </label>
+      <label class="ctrl">Custo de retomar (tokens)
+        <input id="retomada" type="number" min="0" step="500" value="19500">
+        <small>o que você re-paga ao retomar</small>
+      </label>
+    </div>
+  </div>
+
+  <div id="content"><div class="empty">Nenhum dado carregado ainda.</div></div>
+
+  <div class="foot card" style="margin-top:22px">
+    <b>Como a economia é calculada (sem overclaim).</b>
+    <ul>
+      <li><b>Tokens lidos</b> = soma do <i>pico de crescimento</i> de cada sessão (o quanto de conversa você arrastaria se nunca desse <code>/clear</code>+handover).</li>
+      <li><b>Economia (tokens)</b> = por sessão, <code>pico − custo de retomar</code> (nunca negativo). O <i>baseline</i> (system+tools+memória) é pago dos dois jeitos, então <b>não</b> entra como economia.</li>
+      <li><b>R$</b> = tokens × (preço <b>input</b> USD/1M do modelo) × câmbio. Preços da tabela oficial da API (Opus US$5, Sonnet US$3, Haiku US$1, Fable US$10 por 1M input); o modelo é auto-detectado do log e o câmbio é seu.</li>
+      <li>⚠️ Contexto re-arrastado é re-lido como <b>input</b> — por isso o preço de input. Mas re-leitura costuma cair no <b>cache</b> (~0,1× do input), então o R$ aqui é um <b>teto</b> (pior caso, sem cache).</li>
+      <li>Números de <b>uma máquina</b>, do seu próprio log — não é promessa, é medição.</li>
+    </ul>
+  </div>
+</div>
+
+<div id="tip"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const fmt = n => new Intl.NumberFormat('pt-BR').format(Math.round(n));
+const fmtK = n => (n>=1000 ? (n/1000).toFixed(n>=10000?0:1)+'k' : String(Math.round(n)));
+const brl = n => new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(n);
+
+let RECORDS = [];
+
+// preço input USD/1M por família de modelo (tabela oficial da API)
+const MODEL_USD = {
+  'opus':5, 'fable':10, 'mythos':10, 'sonnet':3, 'haiku':1
+};
+function usdForModel(m, def){
+  const s=(m||'').toLowerCase();
+  for(const k in MODEL_USD){ if(s.includes(k)) return MODEL_USD[k]; }
+  return def; // sem modelo no log → usa o selecionado
+}
+
+// ---------- parsing ----------
+function parseJSONL(text){
+  const out=[];
+  for(const line of text.split(/\r?\n/)){
+    const t=line.trim(); if(!t) continue;
+    try{ const o=JSON.parse(t); out.push(o); }catch(e){/* skip */}
+  }
+  return out;
+}
+function parseCSV(text){
+  const lines=text.split(/\r?\n/).filter(l=>l.trim());
+  if(!lines.length) return [];
+  const head=splitCSV(lines[0]).map(h=>h.trim());
+  return lines.slice(1).map(l=>{
+    const cells=splitCSV(l); const o={};
+    head.forEach((h,i)=>o[h]=cells[i]);
+    return o;
+  });
+}
+function splitCSV(line){
+  const out=[]; let cur='',q=false;
+  for(let i=0;i<line.length;i++){const c=line[i];
+    if(q){ if(c==='"'){ if(line[i+1]==='"'){cur+='"';i++;} else q=false; } else cur+=c; }
+    else { if(c===','){out.push(cur);cur='';} else if(c==='"'){q=true;} else cur+=c; }
+  }
+  out.push(cur); return out;
+}
+function normalize(raw){
+  // aceita chaves do nudge log OU nomes equivalentes em CSV
+  return raw.map(r=>({
+    session_id: r.session_id ?? r.session ?? r.sid ?? '—',
+    growth: +(r.growth ?? r.crescimento ?? r.tokens ?? 0) || 0,
+    total: +(r.total ?? r.window ?? 0) || 0,
+    ts: +(r.ts ?? r.timestamp ?? 0) || 0,
+    model: r.model ?? r.modelo ?? ''
+  })).filter(r=>r.growth>0);
+}
+
+// ---------- aggregation ----------
+function bySession(records){
+  const m=new Map();
+  for(const r of records){
+    const g=m.get(r.session_id) || {id:r.session_id, peak:0, total:0, model:r.model, ts:r.ts, hits:0};
+    g.peak=Math.max(g.peak,r.growth);
+    g.total=Math.max(g.total,r.total);
+    g.model=r.model||g.model; g.ts=Math.max(g.ts,r.ts); g.hits++;
+    m.set(r.session_id,g);
+  }
+  return [...m.values()].sort((a,b)=>a.ts-b.ts);
+}
+
+// ---------- render ----------
+function render(){
+  const fx=+$('#fx').value||0;
+  const defUSD=+$('#model').value||0;
+  const reto=+$('#retomada').value||0;
+  const perMFor=m=>usdForModel(m,defUSD)/1e6*fx;  // R$ por token, por modelo da sessão
+  const sessions=bySession(RECORDS);
+  const content=$('#content');
+  if(!sessions.length){ content.innerHTML='<div class="empty">Nenhum evento válido no arquivo.</div>'; return; }
+
+  let totalRead=0, savedTok=0, costNo=0, savedR=0;
+  for(const s of sessions){
+    const perM=perMFor(s.model);
+    const sav=Math.max(0,s.peak-reto);
+    totalRead+=s.peak; savedTok+=sav; costNo+=s.peak*perM; savedR+=sav*perM;
+  }
+
+  content.innerHTML = `
+    <div class="kpis">
+      <div class="tile"><div class="lbl">📁 Sessões</div><div class="val">${fmt(sessions.length)}</div></div>
+      <div class="tile"><div class="lbl">📖 Tokens lidos <span class="note">(pico Σ)</span></div><div class="val">${fmt(totalRead)}</div></div>
+      <div class="tile good"><div class="lbl">✂️ Economia (tokens)</div><div class="val">${fmt(savedTok)}</div></div>
+      <div class="tile"><div class="lbl">💸 Custo sem O(1)mem</div><div class="val">${brl(costNo)}</div></div>
+      <div class="tile good"><div class="lbl">💰 Economia (R$)</div><div class="val">${brl(savedR)}</div></div>
+    </div>
+    <h2>Crescimento por sessão <span class="note">— pico de conversa; linha = custo de retomar</span></h2>
+    <div class="chartwrap" id="chart"></div>
+    <button class="toggle" id="tblBtn">ver tabela</button>
+    <div id="tbl" class="hidden"></div>
+  `;
+  drawChart(sessions, reto);
+  buildTable(sessions, reto, perMFor);
+  $('#tblBtn').onclick=()=>{const t=$('#tbl');t.classList.toggle('hidden');
+    $('#tblBtn').textContent=t.classList.contains('hidden')?'ver tabela':'ocultar tabela';};
+}
+
+function drawChart(sessions, reto){
+  const n=sessions.length;
+  const barW=34, gap=14, padL=52, padR=16, padT=16, padB=46;
+  const W=Math.max(620, padL+padR+n*(barW+gap));
+  const H=300, plotH=H-padT-padB;
+  const maxV=Math.max(...sessions.map(s=>s.peak), reto)*1.12 || 1;
+  const y=v=>padT+plotH-(v/maxV)*plotH;
+  const ticks=4;
+  let g='';
+  for(let i=0;i<=ticks;i++){const v=maxV*i/ticks; const yy=y(v);
+    g+=`<line class="grid-line" x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}"/>`;
+    g+=`<text class="axis-lbl" x="${padL-8}" y="${yy+3}" text-anchor="end">${fmtK(v)}</text>`;}
+  // threshold (retomada) line
+  const yR=y(reto);
+  g+=`<line class="thr-line" x1="${padL}" y1="${yR}" x2="${W-padR}" y2="${yR}"/>`;
+  g+=`<text class="thr-lbl" x="${W-padR}" y="${yR-4}" text-anchor="end">retomar ${fmtK(reto)}</text>`;
+  // bars
+  sessions.forEach((s,i)=>{
+    const x=padL+i*(barW+gap)+gap/2;
+    const yy=y(s.peak), h=padT+plotH-yy;
+    g+=`<rect class="bar" x="${x}" y="${yy}" width="${barW}" height="${h}" rx="4"
+        data-id="${s.id}" data-peak="${s.peak}" data-saved="${Math.max(0,s.peak-reto)}" data-hits="${s.hits}"></rect>`;
+    g+=`<text class="axis-lbl" x="${x+barW/2}" y="${H-padB+16}" text-anchor="middle">${s.id.slice(0,6)}</text>`;
+  });
+  g+=`<line class="base-line" x1="${padL}" y1="${padT+plotH}" x2="${W-padR}" y2="${padT+plotH}"/>`;
+  $('#chart').innerHTML=`<svg width="${W}" height="${H}" role="img" aria-label="Crescimento por sessão">${g}</svg>`;
+  // hover
+  const tip=$('#tip');
+  $('#chart').querySelectorAll('.bar').forEach(b=>{
+    b.addEventListener('mousemove',e=>{
+      tip.innerHTML=`<b>${b.dataset.id.slice(0,8)}</b> · ${b.dataset.hits} aviso(s)<br>pico ${fmt(+b.dataset.peak)} tok · economia ${fmt(+b.dataset.saved)}`;
+      tip.style.left=(e.clientX+12)+'px'; tip.style.top=(e.clientY-10)+'px'; tip.style.opacity=1;});
+    b.addEventListener('mouseleave',()=>tip.style.opacity=0);
+  });
+}
+
+function buildTable(sessions, reto, perMFor){
+  let rows=sessions.map(s=>{const sav=Math.max(0,s.peak-reto);
+    return `<tr><td>${s.id.slice(0,8)}</td><td>${fmt(s.peak)}</td><td>${fmt(sav)}</td><td>${brl(sav*perMFor(s.model))}</td><td>${s.model||'—'}</td></tr>`;}).join('');
+  $('#tbl').innerHTML=`<table><thead><tr><th>Sessão</th><th>Pico (tok)</th><th>Economia (tok)</th><th>Economia (R$)</th><th>Modelo</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+// ---------- input wiring ----------
+function ingest(text, name){
+  const isCSV=/\.csv$/i.test(name||'') || (!text.trim().startsWith('{') && text.includes(','));
+  const raw=isCSV?parseCSV(text):parseJSONL(text);
+  RECORDS=normalize(raw);
+  render();
+}
+const drop=$('#drop'), file=$('#file');
+drop.onclick=()=>file.click();
+drop.onkeydown=e=>{if(e.key==='Enter'||e.key===' ')file.click();};
+file.onchange=e=>{const f=e.target.files[0]; if(!f)return; const r=new FileReader();
+  r.onload=()=>ingest(r.result,f.name); r.readAsText(f);};
+['dragover','dragenter'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('hot');}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('hot');}));
+drop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0]; if(!f)return;
+  const r=new FileReader(); r.onload=()=>ingest(r.result,f.name); r.readAsText(f);});
+$('#model').onchange=()=>RECORDS.length&&render();
+$('#fx').oninput=()=>RECORDS.length&&render();
+$('#retomada').oninput=()=>RECORDS.length&&render();
+
+// demo data (2 sessões reais do log de exemplo)
+$('#demo').onclick=e=>{e.preventDefault();
+  const demo=[
+    {ts:1784744532,session_id:"5cf293ca",event:"nudge_emitted",growth:153415,total:198629,model:"claude-opus-4-8"},
+    {ts:1784761204,session_id:"b73bb128",event:"nudge_emitted",growth:102314,total:143745,model:"claude-opus-4-8"},
+    {ts:1784762757,session_id:"b73bb128",event:"nudge_emitted",growth:150941,total:192372,model:"claude-opus-4-8"},
+    {ts:1784700000,session_id:"a1f4c9d2",event:"nudge_emitted",growth:88010,total:130120,model:"claude-opus-4-8"}
+  ];
+  RECORDS=normalize(demo); render();
+};
+</script>
+</body>
+</html>

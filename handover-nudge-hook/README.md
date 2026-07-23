@@ -30,6 +30,14 @@ turno do transcript. É esse delta que cruza o limiar.
    cima de um "agora não" de 80k. É o antídoto da fadiga de alerta, que mataria o
    mecanismo.
 
+## Toast nativo do Windows (aviso fora do terminal)
+
+O texto injetado é o canal *dentro* da conversa — mas quando você cruza o limiar bem no meio de uma tarefa boa, é justo aí que não está olhando o terminal. Então o hook também dispara um **toast nativo do Windows** no canto da tela (`notify_windows()`), via PowerShell + a API `Windows.UI.Notifications` — **sem instalar nada** (WinRT já vem no Windows). Ele cutuca *"hora de um /handover?"* fora do terminal, no mesmo instante do nudge.
+
+- **Fail-open absoluto:** se o PowerShell/WinRT não existir (outro SO) ou falhar, o erro é engolido — o hook segue normal, sem toast. Em Linux/macOS a função simplesmente não faz nada.
+- **Mesma disciplina:** o toast só dispara **junto** do nudge (uma vez por nível, respeitando cap e silêncio) — não é um alerta à parte que pudesse virar spam.
+- **Paridade com o Hermes:** o watchdog do Hermes (`adapters/hermes/`) tem a mesma função — a diferença é só o rótulo do notificador (`"Claude Code"` vs `"Hermes"`).
+
 ## Por que o texto injetado é *factual*, não imperativo (isso é crítico)
 
 A [doc oficial de hooks](https://code.claude.com/docs/en/hooks) é explícita: **escreva o
